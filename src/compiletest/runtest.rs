@@ -467,6 +467,12 @@ fn run_debuginfo_gdb_test(config: &Config, props: &TestProps, testfile: &Path) {
             // write debugger script
             let script_str = [
                 "set charset UTF-8".to_string(),
+                // Add the directory containing the pretty printers to
+                // GDB's script auto loading safe path ...
+                format!("set auto-load safe-path {}:{}",
+                        rust_pp_module_abs_path.as_slice(),
+                        config.build_base.as_str().unwrap()),
+                format!("file {}", exe_file.as_str().unwrap()),
                 cmds,
                 "quit\n".to_string()
             ].connect("\n");
@@ -496,18 +502,10 @@ fn run_debuginfo_gdb_test(config: &Config, props: &TestProps, testfile: &Path) {
 
             // FIXME (#9639): This needs to handle non-utf8 paths
             let debugger_opts =
-                vec!("-quiet".to_string(),
+                vec!["-quiet".to_string(),
                      "-batch".to_string(),
                      "-nx".to_string(),
-                     // Add the directory containing the pretty printers to
-                     // GDB's script auto loading safe path ...
-                     format!("-iex=add-auto-load-safe-path {}",
-                             rust_pp_module_abs_path.as_slice()),
-                     // ... and also the test directory
-                     format!("-iex=add-auto-load-safe-path {}",
-                             config.build_base.as_str().unwrap()),
-                     format!("-command={}", debugger_script.as_str().unwrap()),
-                     exe_file.as_str().unwrap().to_string());
+                     format!("-command={}", debugger_script.as_str().unwrap())];
 
             let proc_args = ProcArgs {
                 prog: debugger(),
